@@ -154,11 +154,13 @@ static void onCrash(struct KSCrash_MonitorContext *monitorContext)
     if (monitorContext->crashedDuringCrashHandling) {
         kscrashreport_writeRecrashReport(monitorContext, g_lastCrashReportFilePath);
     } else if (monitorContext->reportPath) {
+        //reportPath写reportPath路径中
         kscrashreport_writeStandardReport(monitorContext, monitorContext->reportPath);
     } else {
         char crashReportFilePath[KSFU_MAX_PATH_LENGTH];
         int64_t reportID = kscrs_getNextCrashReport(crashReportFilePath, &g_reportStoreConfig);
         strncpy(g_lastCrashReportFilePath, crashReportFilePath, sizeof(g_lastCrashReportFilePath));
+        //把崩溃的上下文下到文件中
         kscrashreport_writeStandardReport(monitorContext, crashReportFilePath);
 
         if (g_reportWrittenCallback) {
@@ -275,6 +277,8 @@ KSCrashInstallErrorCode kscrash_install(const char *appName, const char *const i
 
     ksccd_init(60);
 
+    //保存 onCrash 到 g_onExceptionEvent
+    //崩溃后要写日志
     kscm_setEventCallback(onCrash);
     setMonitors(configuration->monitors);
     if (kscm_activateMonitors() == false) {

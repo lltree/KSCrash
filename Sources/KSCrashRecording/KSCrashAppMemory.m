@@ -11,8 +11,8 @@ NS_ASSUME_NONNULL_BEGIN
                          pressure:(KSCrashAppMemoryState)pressure
 {
     if (self = [super init]) {
-        _footprint = footprint;
-        _remaining = remaining;
+        _footprint = footprint;//已用内存
+        _remaining = remaining;//可用内存
         _pressure = pressure;
     }
     return self;
@@ -26,7 +26,7 @@ NS_ASSUME_NONNULL_BEGIN
     KSCrashAppMemory *comp = (KSCrashAppMemory *)object;
     return comp.footprint == self.footprint && comp.remaining == self.remaining && comp.pressure == self.pressure;
 }
-
+//内存占用最大值
 - (uint64_t)limit
 {
     return _footprint + _remaining;

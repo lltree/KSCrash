@@ -538,11 +538,13 @@ static void addContextualInfoToEvent(KSCrash_MonitorContext *eventContext)
     }
 }
 
-KSCrashMonitorAPI *kscm_system_getAPI(void)
-{
-    static KSCrashMonitorAPI api = { .monitorId = monitorId,
-                                     .setEnabled = setEnabled,
-                                     .isEnabled = isEnabled,
-                                     .addContextualInfoToEvent = addContextualInfoToEvent };
+KSCrashMonitorAPI * kscm_system_getAPI(void) {
+    static KSCrashMonitorAPI api = {
+        .monitorId                = monitorId,
+        .setEnabled               = setEnabled,
+        .isEnabled                = isEnabled,
+        .addContextualInfoToEvent = addContextualInfoToEvent
+    };
+
     return &api;
 }

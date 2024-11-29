@@ -69,27 +69,37 @@ typedef NSString *KSCrashAppMemoryKeys NS_TYPED_ENUM NS_SWIFT_NAME(AppMemoryKeys
 FOUNDATION_EXPORT KSCrashAppMemoryKeys const KSCrashAppMemoryNewValueKey NS_SWIFT_NAME(newValue);
 FOUNDATION_EXPORT KSCrashAppMemoryKeys const KSCrashAppMemoryOldValueKey NS_SWIFT_NAME(oldValue);
 
-/** The memory state for level and pressure. */
+/**
+ * 枚举类型 `KSCrashAppMemoryState` 描述了应用程序内存状态的不同级别，主要用于表示内存压力和内存级别。
+ */
 typedef NS_ENUM(NSUInteger, KSCrashAppMemoryState) {
 
-    /** Everything is A-OK, go on with your business. */
+    /**
+     * 正常状态，一切顺利，继续执行。
+     */
     KSCrashAppMemoryStateNormal = 0,
 
-    /** Things are starting to get heavy. */
+    /**
+     * 内存使用开始变得沉重，处于警告状态。
+     */
     KSCrashAppMemoryStateWarn,
 
-    /** Things are getting serious, allocations should be handled carefully. */
+    /**
+     * 内存压力加大，应该小心处理分配。
+     */
     KSCrashAppMemoryStateUrgent,
 
-    /** At this point you are seconds away from being terminated.
-     *  You likely just received or are about to receive a
-     *  UIApplicationDidReceiveMemoryWarningNotification.
+    /**
+     * 内存压力非常严重，应用即将被终止。可能刚收到或即将收到 `UIApplicationDidReceiveMemoryWarningNotification` 通知。
      */
     KSCrashAppMemoryStateCritical,
 
-    /** You have been or will be terminated. Out-Of-Memory. SIGKILL. */
+    /**
+     * 终止状态，内存溢出。收到 `SIGKILL` 信号，应用已被系统杀死。
+     */
     KSCrashAppMemoryStateTerminal
 } NS_SWIFT_NAME(AppMemoryState);
+
 
 /**
  * Helpers to convert to and from pressure/level and strings.
@@ -113,24 +123,25 @@ NS_SWIFT_NAME(AppMemory)
 + (instancetype)new NS_UNAVAILABLE;
 
 /** Footprint is the amount of memory used up against the memory limit (level). */
-@property(readonly, nonatomic, assign) uint64_t footprint;
+@property(readonly, nonatomic, assign) uint64_t footprint;//已用
 
 /**
  * Remaining is how much memory is left before the app is terminated.
  * same as `os_proc_available_memory`.
  * https://developer.apple.com/documentation/os/3191911-os_proc_available_memory
  */
-@property(readonly, nonatomic, assign) uint64_t remaining;
+@property(readonly, nonatomic, assign) uint64_t remaining;//剩余
 
 /** The limi is the maximum amount of memory that can be used by this app,
  *  it's the value that if attained the app will be terminated.
  *  Do not cache this value as it can change at runtime (it's very very rare however).
  */
-@property(readonly, nonatomic, assign) uint64_t limit;
+@property(readonly, nonatomic, assign) uint64_t limit;//总共
 
+//level 通常用于表示当前系统的内存使用状态，可能是一个总体性的指标，用于描述整个系统的内存负载情况。
 /** The current memory level. */
 @property(readonly, nonatomic, assign) KSCrashAppMemoryState level;
-
+//pressure 更强调“内存压力”，通常表示当前内存资源紧张的程度。内存压力可能不仅仅是空闲内存的少多，而是系统对当前内存负载的应对能力的直接反映。
 /** The current memory pressure. */
 @property(readonly, nonatomic, assign) KSCrashAppMemoryState pressure;
 

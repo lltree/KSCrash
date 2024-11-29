@@ -35,34 +35,39 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface KSCrashConfiguration : NSObject <NSCopying>
 
-/** Specifies a custom base path for KSCrash installation.
- * If `nil` the default directory is used:.
+/**
+ * Specifies a custom base path for KSCrash installation.
+ * If `nil` the default directory is used.
  * The default directory is "KSCrash" inside the default cache directory.
  *
  * **Default**: `nil`
  */
-@property(nonatomic, copy, nullable) NSString *installPath;
+@property(nonatomic, copy, nullable) NSString *installPath; // 保存路径
 
-/** The configuration for report store.
+/**
+ * The configuration for report store.
  * @note See `KSCrashStoreConfiguration` for more details.
  */
-@property(nonatomic, strong) KSCrashReportStoreConfiguration *reportStoreConfiguration;
+@property(nonatomic, strong) KSCrashReportStoreConfiguration *reportStoreConfiguration; // 崩溃报告存储配置
 
-/** The crash types that will be handled.
+/**
+ * The crash types that will be handled.
  * Some crash types may not be enabled depending on circumstances (e.g., running in a debugger).
  *
  * **Default**: `KSCrashMonitorTypeProductionSafeMinimal`
  */
-@property(nonatomic, assign) KSCrashMonitorType monitors;
+@property(nonatomic, assign) KSCrashMonitorType monitors; // 监控崩溃类型
 
-/** User-supplied data in JSON format. NULL to delete.
+/**
+ * User-supplied data in JSON format. NULL to delete.
  *
  * This JSON string contains user-specific data that will be included in
  * the crash report. If NULL is passed, any existing user data will be deleted.
  */
-@property(nonatomic, copy, nullable) NSDictionary<NSString *, id> *userInfoJSON;
+@property(nonatomic, copy, nullable) NSDictionary<NSString *, id> *userInfoJSON; // 附加的自定义信息
 
-/** The maximum time to allow the main thread to run without returning.
+/**
+ * The maximum time to allow the main thread to run without returning.
  *
  * If the main thread is occupied by a task for longer than this interval, the
  * watchdog will consider the queue deadlocked and shut down the app, writing a
@@ -73,9 +78,10 @@ NS_ASSUME_NONNULL_BEGIN
  * application on a different thread or set this to a higher value until initialization
  * is complete.
  */
-@property(nonatomic, assign) double deadlockWatchdogInterval;
+@property(nonatomic, assign) double deadlockWatchdogInterval; // 死锁时间
 
-/** If true, attempt to fetch dispatch queue names for each running thread.
+/**
+ * If true, attempt to fetch dispatch queue names for each running thread.
  *
  * This option enables the retrieval of dispatch queue names for each thread at the
  * time of a crash. This can provide useful context, but there is a risk of crashing
@@ -83,9 +89,10 @@ NS_ASSUME_NONNULL_BEGIN
  *
  * **Default**: false
  */
-@property(nonatomic, assign) BOOL enableQueueNameSearch;
+@property(nonatomic, assign) BOOL enableQueueNameSearch; // 是否启用队列名称查找
 
-/** If true, introspect memory contents during a crash.
+/**
+ * If true, introspect memory contents during a crash.
  *
  * Enables the inspection of memory contents during a crash. Any Objective-C objects
  * or C strings near the stack pointer or referenced by CPU registers or exceptions
@@ -93,9 +100,10 @@ NS_ASSUME_NONNULL_BEGIN
  *
  * **Default**: false
  */
-@property(nonatomic, assign) BOOL enableMemoryIntrospection;
+@property(nonatomic, assign) BOOL enableMemoryIntrospection; // 是否启用内存检查
 
-/** List of Objective-C classes that should never be introspected.
+/**
+ * List of Objective-C classes that should never be introspected.
  *
  * A list of class names that should not be inspected during a crash. Only the class
  * names will be recorded in the crash report when instances of these classes are
@@ -103,9 +111,10 @@ NS_ASSUME_NONNULL_BEGIN
  *
  * **Default**: NULL
  */
-@property(nonatomic, strong, nullable) NSArray<NSString *> *doNotIntrospectClasses;
+@property(nonatomic, strong, nullable) NSArray<NSString *> *doNotIntrospectClasses; // 不进行内存检查的类名单
 
-/** Callback to invoke upon a crash.
+/**
+ * Callback to invoke upon a crash.
  *
  * This function is called during the crash reporting process, providing an opportunity
  * to add additional information to the crash report. Only async-safe functions should
@@ -113,9 +122,10 @@ NS_ASSUME_NONNULL_BEGIN
  *
  * **Default**: NULL
  */
-@property(nonatomic, copy, nullable) void (^crashNotifyCallback)(const struct KSCrashReportWriter *writer);
+@property(nonatomic, copy, nullable) void (^crashNotifyCallback)(const struct KSCrashReportWriter *writer); // 崩溃通知回调
 
-/** Callback to invoke upon finishing writing a crash report.
+/**
+ * Callback to invoke upon finishing writing a crash report.
  *
  * This function is called after a crash report has been written. It allows the caller
  * to react to the completion of the report. Only async-safe functions should be called
@@ -123,26 +133,29 @@ NS_ASSUME_NONNULL_BEGIN
  *
  * **Default**: NULL
  */
-@property(nonatomic, copy, nullable) void (^reportWrittenCallback)(int64_t reportID);
+@property(nonatomic, copy, nullable) void (^reportWrittenCallback)(int64_t reportID); // 崩溃报告写入完成后的回调
 
-/** If true, append KSLOG console messages to the crash report.
+/**
+ * If true, append KSLOG console messages to the crash report.
  *
  * When enabled, KSLOG console messages will be included in the crash report.
  *
  * **Default**: false
  */
-@property(nonatomic, assign) BOOL addConsoleLogToReport;
+@property(nonatomic, assign) BOOL addConsoleLogToReport; // 是否将控制台日志添加到报告
 
-/** If true, print the previous log to the console on startup.
+/**
+ * If true, print the previous log to the console on startup.
  *
  * This option is for debugging purposes and will print the previous log to the
  * console when the application starts.
  *
  * **Default**: false
  */
-@property(nonatomic, assign) BOOL printPreviousLogOnStartup;
+@property(nonatomic, assign) BOOL printPreviousLogOnStartup; // 启动时打印之前的日志
 
-/** If true, enable C++ exceptions catching with `__cxa_throw` swap.
+/**
+ * If true, enable C++ exceptions catching with `__cxa_throw` swap.
  *
  * This experimental feature works similarly to `LD_PRELOAD` and supports catching
  * C++ exceptions by swapping the `__cxa_throw` function. It helps in obtaining
@@ -151,9 +164,10 @@ NS_ASSUME_NONNULL_BEGIN
  *
  * **Default**: true
  */
-@property(nonatomic, assign) BOOL enableSwapCxaThrow;
+@property(nonatomic, assign) BOOL enableSwapCxaThrow; // 是否启用 C++ 异常捕获
 
-/** If true, enables monitoring for SIGTERM signals.
+/**
+ * If true, enables monitoring for SIGTERM signals.
  *
  * A SIGTERM is usually sent to the application by the OS during a graceful shutdown,
  * but it can also happen on some Watchdog events.
@@ -162,9 +176,10 @@ NS_ASSUME_NONNULL_BEGIN
  *
  * **Default**: false
  */
-@property(nonatomic, assign) BOOL enableSigTermMonitoring;
+@property(nonatomic, assign) BOOL enableSigTermMonitoring; // 是否监控 SIGTERM 信号
 
 @end
+
 
 NS_SWIFT_NAME(CrashReportStoreConfiguration)
 @interface KSCrashReportStoreConfiguration : NSObject <NSCopying>
@@ -203,6 +218,7 @@ NS_SWIFT_NAME(CrashReportStoreConfiguration)
  *
  * **Default**: `KSCrashReportCleanupPolicyAlways`
  */
+//报告上传后的删除策略
 @property(nonatomic, assign) KSCrashReportCleanupPolicy reportCleanupPolicy;
 
 @end

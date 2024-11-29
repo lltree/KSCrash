@@ -104,6 +104,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 /** Get the singleton instance of the crash reporter.
  */
+@property(nonatomic, strong) KSCrashConfiguration *configuration;
 @property(class, readonly) KSCrash *sharedInstance NS_SWIFT_NAME(shared);
 
 /** Install the crash reporter.

@@ -107,6 +107,7 @@ static NSTimeInterval g_watchdogInterval = 0;
     kscm_notifyFatalExceptionCaptured(false);
 
     KSMC_NEW_CONTEXT(machineContext);
+    //指明 主线程
     ksmc_getContextForThread(g_mainQueueThread, machineContext, false);
     KSStackCursor stackCursor;
     kssc_initWithMachineContext(&stackCursor, KSSC_MAX_STACK_DEPTH, machineContext);
@@ -193,11 +194,14 @@ static void setEnabled(bool isEnabled)
 
 static bool isEnabled(void) { return g_isEnabled; }
 
-KSCrashMonitorAPI *kscm_deadlock_getAPI(void)
-{
+KSCrashMonitorAPI * kscm_deadlock_getAPI(void) {
     static KSCrashMonitorAPI api = {
-        .monitorId = monitorId, .monitorFlags = monitorFlags, .setEnabled = setEnabled, .isEnabled = isEnabled
+        .monitorId    = monitorId,
+        .monitorFlags = monitorFlags,
+        .setEnabled   = setEnabled,
+        .isEnabled    = isEnabled
     };
+
     return &api;
 }
 

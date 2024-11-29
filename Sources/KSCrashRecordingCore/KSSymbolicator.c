@@ -54,11 +54,19 @@ uintptr_t kssymbolicator_callInstructionAddress(const uintptr_t returnAddress)
 {
     return CALL_INSTRUCTION_FROM_RETURN_ADDRESS(returnAddress);
 }
-
+//对 Stack Cursor 进行符号化
 bool kssymbolicator_symbolicate(KSStackCursor *cursor)
 {
     Dl_info symbolsBuffer;
+    // 调用 dladdr 获取符号信息
     if (ksdl_dladdr(CALL_INSTRUCTION_FROM_RETURN_ADDRESS(cursor->stackEntry.address), &symbolsBuffer)) {
+        // 获取并保存符号信息
+//        Dl_info 结构体包含如下字段：
+//
+//        dli_fname：包含包含符号的库文件的路径。
+//        dli_fbase：该库文件的加载基地址。
+//        dli_sname：符号名称。
+//        dli_saddr：符号的地址。
         cursor->stackEntry.imageAddress = (uintptr_t)symbolsBuffer.dli_fbase;
         cursor->stackEntry.imageName = symbolsBuffer.dli_fname;
         cursor->stackEntry.symbolAddress = (uintptr_t)symbolsBuffer.dli_saddr;
@@ -66,9 +74,11 @@ bool kssymbolicator_symbolicate(KSStackCursor *cursor)
         return true;
     }
 
+    // 如果符号信息无法获取，清空堆栈条目
     cursor->stackEntry.imageAddress = 0;
     cursor->stackEntry.imageName = 0;
     cursor->stackEntry.symbolAddress = 0;
     cursor->stackEntry.symbolName = 0;
     return false;
 }
+

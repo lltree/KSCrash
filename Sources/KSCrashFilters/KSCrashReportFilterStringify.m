@@ -55,6 +55,7 @@
 {
     NSMutableArray<id<KSCrashReport>> *filteredReports = [NSMutableArray arrayWithCapacity:[reports count]];
     for (id<KSCrashReport> report in reports) {
+        //把报告都转成字符串
         NSString *reportString = [self stringifyReport:report];
         [filteredReports addObject:[KSCrashReportString reportWithValue:reportString]];
     }

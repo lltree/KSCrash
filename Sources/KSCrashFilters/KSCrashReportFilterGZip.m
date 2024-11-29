@@ -64,6 +64,7 @@
             kscrash_callCompletion(onCompletion, filteredReports, error);
             return;
         } else {
+            //报告数据压缩
             [filteredReports addObject:[KSCrashReportData reportWithValue:compressedData]];
         }
     }

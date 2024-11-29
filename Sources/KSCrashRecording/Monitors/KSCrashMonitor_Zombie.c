@@ -144,9 +144,9 @@ static inline void handleDealloc(const void *self)
 CREATE_ZOMBIE_HANDLER_INSTALLER(NSObject)
 CREATE_ZOMBIE_HANDLER_INSTALLER(NSProxy)
 
-static void install(void)
-{
+static void install(void) {
     unsigned cacheSize = CACHE_SIZE;
+
     g_zombieHashMask = cacheSize - 1;
     g_zombieCache = calloc(cacheSize, sizeof(*g_zombieCache));
     if (g_zombieCache == NULL) {
@@ -211,8 +211,7 @@ static void setEnabled(bool isEnabled)
 
 static bool isEnabled(void) { return g_isEnabled; }
 
-static void addContextualInfoToEvent(KSCrash_MonitorContext *eventContext)
-{
+static void addContextualInfoToEvent(KSCrash_MonitorContext *eventContext) {
     if (g_isEnabled) {
         eventContext->ZombieException.address = (uintptr_t)g_lastDeallocedException.address;
         eventContext->ZombieException.name = g_lastDeallocedException.name;
@@ -220,11 +219,13 @@ static void addContextualInfoToEvent(KSCrash_MonitorContext *eventContext)
     }
 }
 
-KSCrashMonitorAPI *kscm_zombie_getAPI(void)
-{
-    static KSCrashMonitorAPI api = { .monitorId = monitorId,
-                                     .setEnabled = setEnabled,
-                                     .isEnabled = isEnabled,
-                                     .addContextualInfoToEvent = addContextualInfoToEvent };
+KSCrashMonitorAPI * kscm_zombie_getAPI(void) {
+    static KSCrashMonitorAPI api = {
+        .monitorId                = monitorId,
+        .setEnabled               = setEnabled,
+        .isEnabled                = isEnabled,
+        .addContextualInfoToEvent = addContextualInfoToEvent
+    };
+
     return &api;
 }

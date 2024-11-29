@@ -203,6 +203,7 @@ static NSDictionary *g_registerOrders;
             continue;
         }
         if ([self majorVersion:report.value] == kExpectedMajorVersion) {
+            //转化成苹果的方式
             NSString *appleReportString = [self toAppleFormat:report.value];
             if (appleReportString != nil) {
                 [filteredReports addObject:[KSCrashReportString reportWithValue:appleReportString]];

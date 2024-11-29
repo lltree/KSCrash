@@ -40,48 +40,72 @@ extern "C" {
 #endif
 
 typedef struct {
-    // Saved data
+    // 保存的数据
 
-    /** Total active time elapsed since the last crash. */
+    /**
+     * 自上次崩溃以来，应用程序处于活跃状态的总时间（单位：秒）。
+     */
     double activeDurationSinceLastCrash;
 
-    /** Total time backgrounded elapsed since the last crash. */
+    /**
+     * 自上次崩溃以来，应用程序处于后台状态的总时间（单位：秒）。
+     */
     double backgroundDurationSinceLastCrash;
 
-    /** Number of app launches since the last crash. */
+    /**
+     * 自上次崩溃以来，应用程序启动的次数。
+     */
     int launchesSinceLastCrash;
 
-    /** Number of sessions (launch, resume from suspend) since last crash. */
+    /**
+     * 自上次崩溃以来的会话数，会话包括应用启动和从挂起恢复的总次数。
+     */
     int sessionsSinceLastCrash;
 
-    /** Total active time elapsed since launch. */
+    /**
+     * 自应用本次启动以来，应用程序处于活跃状态的总时间（单位：秒）。
+     */
     double activeDurationSinceLaunch;
 
-    /** Total time backgrounded elapsed since launch. */
+    /**
+     * 自应用本次启动以来，应用程序处于后台状态的总时间（单位：秒）。
+     */
     double backgroundDurationSinceLaunch;
 
-    /** Number of sessions (launch, resume from suspend) since app launch. */
+    /**
+     * 自应用本次启动以来的会话数，会话包括启动和从挂起恢复的总次数。
+     */
     int sessionsSinceLaunch;
 
-    /** If true, the application crashed on the previous launch. */
+    /**
+     * 如果为 `true`，表示应用程序在上次启动时发生了崩溃。
+     */
     bool crashedLastLaunch;
 
-    // Live data
+    // 动态数据
 
-    /** If true, the application crashed on this launch. */
+    /**
+     * 如果为 `true`，表示应用程序在本次启动时发生了崩溃。
+     */
     bool crashedThisLaunch;
 
-    /** Timestamp for when the app state was last changed (active<->inactive,
-     * background<->foreground) */
+    /**
+     * 记录应用状态最近一次发生改变（如从活跃切换为非活跃，或从后台切换到前台）的时间戳。
+     */
     double appStateTransitionTime;
 
-    /** If true, the application is currently active. */
+    /**
+     * 如果为 `true`，表示应用程序当前处于活跃状态。
+     */
     bool applicationIsActive;
 
-    /** If true, the application is currently in the foreground. */
+    /**
+     * 如果为 `true`，表示应用程序当前处于前台状态。
+     */
     bool applicationIsInForeground;
 
 } KSCrash_AppState;
+
 
 /** Initialize the state monitor.
  *

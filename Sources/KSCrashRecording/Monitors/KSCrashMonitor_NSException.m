@@ -85,7 +85,19 @@ static KS_NOINLINE void initStackCursor(KSStackCursor *cursor, NSException *exce
     }
     KS_THWART_TAIL_CALL_OPTIMISATION
 }
-
+/*
+ 崩溃信号触发
+     ↓
+ 捕获线程上下文
+     ↓
+ 初始化堆栈游标
+     ↓
+ 逐帧回溯堆栈
+     ↓
+ 符号化（函数名、行号）
+     ↓
+ 生成崩溃报告
+ */
 /** Our custom excepetion handler.
  * Fetch the stack trace from the exception and write a report.
  *
@@ -94,23 +106,29 @@ static KS_NOINLINE void initStackCursor(KSStackCursor *cursor, NSException *exce
 static KS_NOINLINE void handleException(NSException *exception, BOOL isUserReported,
                                         BOOL logAllThreads) KS_KEEP_FUNCTION_IN_STACKTRACE
 {
+    //logAllThreads 打印所有线程
     KSLOG_DEBUG(@"Trapped exception %@", exception);
     if (g_isEnabled) {
         thread_act_array_t threads = NULL;
         mach_msg_type_number_t numThreads = 0;
         if (logAllThreads) {
+            //如果需要记录所有线程的堆栈信息（logAllThreads 为 YES），则调用 ksmc_suspendEnvironment 暂停线程，获取线程信息。
             ksmc_suspendEnvironment(&threads, &numThreads);
         }
         if (isUserReported == NO) {
+            //用户报告的异常（isUserReported == YES）不算作致命异常。
             // User-reported exceptions are not considered fatal.
             kscm_notifyFatalExceptionCaptured(false);
         }
 
+        //生成事件 ID 并获取当前线程的上下文
         KSLOG_DEBUG(@"Filling out context.");
         char eventID[37];
         ksid_generate(eventID);
-        KSMC_NEW_CONTEXT(machineContext);
+        KSMC_NEW_CONTEXT(machineContext);//创建一个 machineContext，保存当前线程的上下文信息。
         ksmc_getContextForThread(ksthread_self(), machineContext, true);
+        
+        //使用 initStackCursor 初始化堆栈游标，用于记录堆栈信息。
         KSStackCursor cursor;
         uintptr_t *callstack = NULL;
         initStackCursor(&cursor, exception, callstack, isUserReported);
@@ -118,6 +136,7 @@ static KS_NOINLINE void handleException(NSException *exception, BOOL isUserRepor
         NS_VALID_UNTIL_END_OF_SCOPE NSString *userInfoString =
             exception.userInfo != nil ? [NSString stringWithFormat:@"%@", exception.userInfo] : nil;
 
+        //填充崩溃上下文
         KSCrash_MonitorContext *crashContext = &g_monitorContext;
         memset(crashContext, 0, sizeof(*crashContext));
         ksmc_fillMonitorContext(crashContext, kscm_nsexception_getAPI());
@@ -131,15 +150,18 @@ static KS_NOINLINE void handleException(NSException *exception, BOOL isUserRepor
         crashContext->stackCursor = &cursor;
         crashContext->currentSnapshotUserReported = isUserReported;
 
+        //调用崩溃处理程序 kscm_handleException，执行后续的崩溃分析和报告。
         KSLOG_DEBUG(@"Calling main crash handler.");
         kscm_handleException(crashContext);
 
         free(callstack);
         if (logAllThreads && isUserReported) {
+            //恢复线程
             ksmc_resumeEnvironment(threads, numThreads);
         }
         if (isUserReported == NO && g_previousUncaughtExceptionHandler != NULL) {
             KSLOG_DEBUG(@"Calling original exception handler.");
+            //再调下以前的
             g_previousUncaughtExceptionHandler(exception);
         }
     }
@@ -168,9 +190,12 @@ static void setEnabled(bool isEnabled)
         g_isEnabled = isEnabled;
         if (isEnabled) {
             KSLOG_DEBUG(@"Backing up original handler.");
+            //这是以前的
             g_previousUncaughtExceptionHandler = NSGetUncaughtExceptionHandler();
 
             KSLOG_DEBUG(@"Setting new handler.");
+            //替换成现在的
+            //崩溃在哪就在哪个线程
             NSSetUncaughtExceptionHandler(&handleUncaughtException);
             KSCrash.sharedInstance.uncaughtExceptionHandler = &handleUncaughtException;
             KSCrash.sharedInstance.customNSExceptionReporter = &customNSExceptionReporter;
@@ -187,10 +212,13 @@ static KSCrashMonitorFlag monitorFlags(void) { return KSCrashMonitorFlagFatal; }
 
 static bool isEnabled(void) { return g_isEnabled; }
 
-KSCrashMonitorAPI *kscm_nsexception_getAPI(void)
-{
+KSCrashMonitorAPI * kscm_nsexception_getAPI(void) {
     static KSCrashMonitorAPI api = {
-        .monitorId = monitorId, .monitorFlags = monitorFlags, .setEnabled = setEnabled, .isEnabled = isEnabled
+        .monitorId    = monitorId,
+        .monitorFlags = monitorFlags,
+        .setEnabled   = setEnabled,
+        .isEnabled    = isEnabled
     };
+
     return &api;
 }

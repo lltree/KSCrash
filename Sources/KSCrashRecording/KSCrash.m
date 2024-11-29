@@ -55,7 +55,7 @@
 @interface KSCrash ()
 
 @property(nonatomic, readwrite, copy) NSString *bundleName;
-@property(nonatomic, strong) KSCrashConfiguration *configuration;
+
 
 @end
 
@@ -248,6 +248,7 @@ static void currentSnapshotUserReportedExceptionHandler(NSException *exception)
     }
 
     KSCrashCConfiguration config = [self.configuration toCConfiguration];
+    //进行安装
     KSCrashInstallErrorCode result =
         kscrash_install(self.bundleName.UTF8String, self.configuration.installPath.UTF8String, &config);
     KSCrashCConfiguration_Release(&config);

@@ -267,14 +267,17 @@ static CrashHandlerData *g_crashHandlerData;
 
 - (void)sendAllReportsWithCompletion:(KSCrashReportFilterCompletion)onCompletion
 {
+    // 检查配置是否有效
     NSError *error = nil;
     if ([self validateSetupWithError:&error] == NO) {
+        // 配置无效时调用回调返回错误
         if (onCompletion != nil) {
             onCompletion(nil, error);
         }
         return;
     }
 
+    // 获取报告处理对象（sink），如果为空则返回错误
     id<KSCrashReportFilter> sink = [self sink];
     if (sink == nil) {
         onCompletion(nil,
@@ -284,6 +287,7 @@ static CrashHandlerData *g_crashHandlerData;
         return;
     }
 
+    // 获取崩溃报告存储对象（store），如果为空则返回错误
     KSCrashReportStore *store = [KSCrash sharedInstance].reportStore;
     if (store == nil) {
         onCompletion(
@@ -294,21 +298,33 @@ static CrashHandlerData *g_crashHandlerData;
         return;
     }
 
+    // 创建报告过滤器链
     NSMutableArray *installationFilters = [NSMutableArray array];
+
+    // 如果启用了Demangle过滤器，添加它
+    // 解决代码混淆问题
     if (self.isDemangleEnabled) {
         [installationFilters addObject:[KSCrashReportFilterDemangle new]];
     }
+
+    // 如果启用了Doctor过滤器，添加它
     if (self.isDoctorEnabled) {
         [installationFilters addObject:[KSCrashReportFilterDoctor new]];
     }
+
+    // 将额外的过滤器和sink添加到过滤器链
     [installationFilters addObjectsFromArray:@[
         self.prependedFilters,
         sink,
     ]];
+
+    // 设置报告存储的sink为构建的过滤器链
     store.sink = [[KSCrashReportFilterPipeline alloc] initWithFilters:installationFilters];
 
+    // 发送所有崩溃报告，完成后调用回调
     [store sendAllReportsWithCompletion:onCompletion];
 }
+
 
 - (void)addPreFilter:(id<KSCrashReportFilter>)filter
 {

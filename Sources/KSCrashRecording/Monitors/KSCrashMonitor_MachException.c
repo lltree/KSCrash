@@ -409,76 +409,90 @@ static bool installExceptionHandler(void)
     kern_return_t kr;
     int error;
 
+    // 当前任务的 mach task
     const task_t thisTask = mach_task_self();
+
+    // 设置需要捕获的异常类型
     exception_mask_t mask =
         EXC_MASK_BAD_ACCESS | EXC_MASK_BAD_INSTRUCTION | EXC_MASK_ARITHMETIC | EXC_MASK_SOFTWARE | EXC_MASK_BREAKPOINT;
 
+    // 备份原始异常端口，确保可以在卸载时恢复默认行为
     KSLOG_DEBUG("Backing up original exception ports.");
     kr = task_get_exception_ports(thisTask, mask, g_previousExceptionPorts.masks, &g_previousExceptionPorts.count,
                                   g_previousExceptionPorts.ports, g_previousExceptionPorts.behaviors,
                                   g_previousExceptionPorts.flavors);
     if (kr != KERN_SUCCESS) {
         KSLOG_ERROR("task_get_exception_ports: %s", mach_error_string(kr));
-        goto failed;
+        goto failed; // 如果获取异常端口失败，则退出
     }
 
+    // 如果尚未创建异常端口，则分配新的端口
     if (g_exceptionPort == MACH_PORT_NULL) {
         KSLOG_DEBUG("Allocating new port with receive rights.");
         kr = mach_port_allocate(thisTask, MACH_PORT_RIGHT_RECEIVE, &g_exceptionPort);
         if (kr != KERN_SUCCESS) {
             KSLOG_ERROR("mach_port_allocate: %s", mach_error_string(kr));
-            goto failed;
+            goto failed; // 分配端口失败，退出
         }
 
+        // 为端口添加发送权限
         KSLOG_DEBUG("Adding send rights to port.");
         kr = mach_port_insert_right(thisTask, g_exceptionPort, g_exceptionPort, MACH_MSG_TYPE_MAKE_SEND);
         if (kr != KERN_SUCCESS) {
             KSLOG_ERROR("mach_port_insert_right: %s", mach_error_string(kr));
-            goto failed;
+            goto failed; // 添加发送权限失败，退出
         }
     }
 
+    // 安装新的异常处理端口
     KSLOG_DEBUG("Installing port as exception handler.");
     kr = task_set_exception_ports(thisTask, mask, g_exceptionPort, (int)(EXCEPTION_DEFAULT | MACH_EXCEPTION_CODES),
                                   THREAD_STATE_NONE);
     if (kr != KERN_SUCCESS) {
         KSLOG_ERROR("task_set_exception_ports: %s", mach_error_string(kr));
-        goto failed;
+        goto failed; // 设置异常端口失败，退出
     }
 
+    // 创建线程属性，用于设置线程为分离状态
     KSLOG_DEBUG("Creating secondary exception thread (suspended).");
     pthread_attr_init(&attr);
     attributes_created = true;
     pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+
+    // 创建辅助异常处理线程
     error = pthread_create(&g_secondaryPThread, &attr, &handleExceptions, (void *)kThreadSecondary);
     if (error != 0) {
         KSLOG_ERROR("pthread_create_suspended_np: %s", strerror(error));
-        goto failed;
+        goto failed; // 创建线程失败，退出
     }
+    // 获取辅助线程的 Mach 线程 ID 并标记为保留线程
     g_secondaryMachThread = pthread_mach_thread_np(g_secondaryPThread);
     ksmc_addReservedThread(g_secondaryMachThread);
 
+    // 创建主异常处理线程
     KSLOG_DEBUG("Creating primary exception thread.");
     error = pthread_create(&g_primaryPThread, &attr, &handleExceptions, (void *)kThreadPrimary);
     if (error != 0) {
         KSLOG_ERROR("pthread_create: %s", strerror(error));
-        goto failed;
+        goto failed; // 创建线程失败，退出
     }
-    pthread_attr_destroy(&attr);
+    pthread_attr_destroy(&attr); // 销毁线程属性
     g_primaryMachThread = pthread_mach_thread_np(g_primaryPThread);
     ksmc_addReservedThread(g_primaryMachThread);
 
     KSLOG_DEBUG("Mach exception handler installed.");
-    return true;
+    return true; // 安装成功
 
 failed:
+    // 安装失败时清理资源
     KSLOG_DEBUG("Failed to install mach exception handler.");
     if (attributes_created) {
-        pthread_attr_destroy(&attr);
+        pthread_attr_destroy(&attr); // 销毁线程属性
     }
-    uninstallExceptionHandler();
+    uninstallExceptionHandler(); // 卸载异常处理器
     return false;
 }
+
 
 static const char *monitorId(void) { return "MachException"; }
 

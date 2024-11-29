@@ -178,7 +178,7 @@ bool kscm_activateMonitors(void)
         if (isAsyncSafeRequired && !(flags & KSCrashMonitorFlagAsyncSafe)) {
             shouldEnable = false;
         }
-
+        //使能目标捕获，开启捕获功能
         kscm_setMonitorEnabled(api, shouldEnable);
     }
 
@@ -284,23 +284,35 @@ bool kscm_notifyFatalExceptionCaptured(bool isAsyncSafeEnvironment)
 void kscm_handleException(struct KSCrash_MonitorContext *context)
 {
     // We're handling a crash if the crash type is fatal
+    /*
+     1. 判断是否为致命异常
+     monitorFlags 是一个标志位集合，表示哪些监控器捕获了当前事件。
+     KSCrashMonitorFlagFatal 是一个标志，表示事件是致命的（如崩溃或未捕获的异常）。
+     通过按位与操作检查是否有 KSCrashMonitorFlagFatal 标志。如果有，表明这是一个致命事件。
+     将结果赋值给 context->handlingCrash，确保当前上下文知道自己正在处理一个致命事件
+     */
     bool hasFatalFlag = (context->monitorFlags & KSCrashMonitorFlagFatal) != KSCrashMonitorFlagNone;
     context->handlingCrash = context->handlingCrash || hasFatalFlag;
 
     context->requiresAsyncSafety = g_requiresAsyncSafety;
     if (g_crashedDuringExceptionHandling) {
+        //检测是否在处理崩溃时再次崩溃
+        //这种情况表示应用进入了二次崩溃状态，通常是更严重的异常。
         context->crashedDuringCrashHandling = true;
     }
 
     // Add contextual info to the event for all enabled monitors
+    //添加上下文信息到事件中
     for (size_t i = 0; i < g_monitors.count; i++) {
         KSCrashMonitorAPI *api = g_monitors.apis[i];
         if (kscm_isMonitorEnabled(api)) {
+            //每一个都调用一遍，用来把memory APPState等搜集
             kscm_addContextualInfoToEvent(api, context);
         }
     }
 
     // Call the exception event handler if it exists
+    // 其实执行的就是onCrash ，保存在了g_onExceptionEvent 变量中
     if (g_onExceptionEvent) {
         g_onExceptionEvent(context);
     }
@@ -308,9 +320,11 @@ void kscm_handleException(struct KSCrash_MonitorContext *context)
     // Restore original handlers if the exception is fatal and not already handled
     if (g_handlingFatalException && !g_crashedDuringExceptionHandling) {
         KSLOG_DEBUG("Exception is fatal. Restoring original handlers.");
+        //如果当前处理的是致命异常（g_handlingFatalException 为 true），且未发生二次崩溃，则恢复系统的默认异常处理程序。
         kscm_disableAllMonitors();
     }
 
     // Done handling the crash
+    //标记当前崩溃处理完成，允许后续操作继续。
     context->handlingCrash = false;
 }

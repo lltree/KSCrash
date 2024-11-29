@@ -62,6 +62,7 @@ FOUNDATION_EXPORT void __KSCrashAppMemorySetProvider(KSCrashAppMemoryProvider pr
 {
     if (self = [super init]) {
         _lock = OS_UNFAIR_LOCK_INIT;
+        
         _heartbeatQueue = dispatch_queue_create_with_target("com.kscrash.memory.heartbeat", DISPATCH_QUEUE_SERIAL,
                                                             dispatch_get_global_queue(QOS_CLASS_DEFAULT, 0));
         _level = KSCrashAppMemoryStateNormal;
@@ -75,42 +76,50 @@ FOUNDATION_EXPORT void __KSCrashAppMemorySetProvider(KSCrashAppMemoryProvider pr
     [self stop];
 }
 
-- (void)start
-{
-    // kill the old ones
+- (void)start {
+    // 停止旧的监控源（如果存在的话）
     if (_pressureSource || _limitSource) {
         [self stop];
     }
 
-    // memory pressure
+    // 内存压力监控
     uintptr_t mask = DISPATCH_MEMORYPRESSURE_NORMAL | DISPATCH_MEMORYPRESSURE_WARN | DISPATCH_MEMORYPRESSURE_CRITICAL;
+    /*
+     dispatch_source_create 是一个用于创建新的 Dispatch Source 的函数，它是 Grand Central Dispatch（GCD）框架的一部分，允许你创建一个源（source）来监听特定的系统事件或条件，并在事件发生时异步执行指定的代码块。
+     */
+    // 创建内存压力的 Dispatch Source源
     _pressureSource = dispatch_source_create(DISPATCH_SOURCE_TYPE_MEMORYPRESSURE, 0, mask, dispatch_get_main_queue());
-
-    __weak __typeof(self) weakMe = self;
-
+    
+    __weak __typeof(self) weakMe = self; // 使用弱引用避免循环引用
+    
+    // 设置内存压力变化事件的回调
     dispatch_source_set_event_handler(_pressureSource, ^{
-        [weakMe _memoryPressureChanged:YES];
+        [weakMe _memoryPressureChanged:YES]; // 内存压力发生变化时触发
     });
-    dispatch_activate(_pressureSource);
+    dispatch_activate(_pressureSource); // 激活内存压力监控源
 
-    // memory limit (level)
-    _limitSource = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, _heartbeatQueue);
+    // 内存水平（level）的监控
+    _limitSource = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, _heartbeatQueue); // 创建定时器 Source
     dispatch_source_set_event_handler(_limitSource, ^{
-        [weakMe _heartbeat:YES];
+        [weakMe _heartbeat:YES]; // 定时触发心跳事件，检查内存限制
     });
-    dispatch_source_set_timer(_limitSource, dispatch_time(DISPATCH_TIME_NOW, 0), NSEC_PER_SEC, NSEC_PER_SEC / 10);
-    dispatch_activate(_limitSource);
+    dispatch_source_set_timer(_limitSource,
+                              dispatch_time(DISPATCH_TIME_NOW, 0), // 开始时间
+                              NSEC_PER_SEC,                        // 每秒触发一次
+                              NSEC_PER_SEC / 10);                  // 容错时间为 0.1 秒
+    dispatch_activate(_limitSource); // 激活定时器
 
 #if KSCRASH_HAS_UIAPPLICATION
-    // We won't always hit this depending on how the system is setup in the app,
-    // but at least we can try.
+    // 如果有 UIApplication，则监听应用完成启动的通知
     [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(_appDidFinishLaunching)
+                                             selector:@selector(_appDidFinishLaunching) // 应用完成启动后的回调
                                                  name:UIApplicationDidFinishLaunchingNotification
                                                object:nil];
 #endif
+    // 处理当前的应用内存变化
     [self _handleMemoryChange:[self currentAppMemory] type:KSCrashAppMemoryTrackerChangeTypeNone];
 }
+
 
 #if KSCRASH_HAS_UIAPPLICATION
 - (void)_appDidFinishLaunching
@@ -131,32 +140,41 @@ FOUNDATION_EXPORT void __KSCrashAppMemorySetProvider(KSCrashAppMemoryProvider pr
         _limitSource = nil;
     }
 }
-
+#pragma mark - 获取AppMemory信息
 static KSCrashAppMemory *_Nullable _ProvideCrashAppMemory(KSCrashAppMemoryState pressure)
 {
+    // 创建一个 `task_vm_info_data_t` 类型的结构体，用于存储任务的虚拟内存信息
     task_vm_info_data_t info = {};
     mach_msg_type_number_t count = TASK_VM_INFO_COUNT;
+    // 使用 `task_info` 获取当前任务的虚拟内存信息
     kern_return_t err = task_info(mach_task_self(), TASK_VM_INFO, (task_info_t)&info, &count);
     if (err != KERN_SUCCESS) {
+        // 如果获取失败，则返回 nil
         return nil;
     }
 
 #if TARGET_OS_SIMULATOR
-    // in simulator, remaining is always 0. So let's fake it.
-    // How about a limit of 3GB.
-    uint64_t limit = 3000000000;
+    // 模拟器环境下，`info.limit_bytes_remaining` 始终为 0。
+    // 为了模拟内存限制，这里假定一个虚拟的内存上限（3GB）。
+    uint64_t limit = 3000000000;  // 设置虚拟内存上限为 3GB
     uint64_t remaining = limit < info.phys_footprint ? 0 : limit - info.phys_footprint;
 #elif KSCRASH_HOST_MAC
-    // macOS doesn't limit memory usage the same way as it's implemented for other OSs.
-    // So we just mock limit by having a large value instead (128 GB).
-    uint64_t limit = 137438953472;  // 128 GB
+    // macOS 环境下，内存使用的限制方式与其他系统不同。
+    // 为了简化处理，这里设置一个较大的虚拟内存上限（128GB）。
+    uint64_t limit = 137438953472;  // 设置虚拟内存上限为 128GB
     uint64_t remaining = limit < info.phys_footprint ? 0 : limit - info.phys_footprint;
 #else
+    // 在其他设备上，直接使用 `info.limit_bytes_remaining` 表示剩余内存。
     uint64_t remaining = info.limit_bytes_remaining;
 #endif
 
+    // 返回一个初始化的 `KSCrashAppMemory` 实例，包含以下信息：
+    // - 当前内存占用量（`info.phys_footprint`）
+    // - 剩余可用内存（`remaining`）
+    // - 内存压力状态（`pressure`）
     return [[KSCrashAppMemory alloc] initWithFootprint:info.phys_footprint remaining:remaining pressure:pressure];
 }
+
 
 - (nullable KSCrashAppMemory *)currentAppMemory
 {
@@ -175,6 +193,7 @@ static KSCrashAppMemory *_Nullable _ProvideCrashAppMemory(KSCrashAppMemoryState 
 - (void)_heartbeat:(BOOL)sendObservers
 {
     // This handles the memory limit.
+    //定时去检查内存使用信息
     KSCrashAppMemory *memory = [self currentAppMemory];
 
     KSCrashAppMemoryState newLevel = memory.level;

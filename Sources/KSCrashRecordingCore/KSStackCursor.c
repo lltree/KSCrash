@@ -53,8 +53,12 @@ void kssc_resetCursor(KSStackCursor *cursor)
 void kssc_initCursor(KSStackCursor *cursor, void (*resetCursor)(KSStackCursor *),
                      bool (*advanceCursor)(KSStackCursor *))
 {
+    //设置符号化函数
+    //将堆栈游标的符号化函数设置为 kssymbolicator_symbolicate，该函数负责将栈帧地址解析为符号信息（如方法名或函数名）。
     cursor->symbolicate = kssymbolicator_symbolicate;
+    //如果调用者提供了 advanceCursor 函数指针，就使用它；否则使用默认的 g_advanceCursor。
     cursor->advanceCursor = advanceCursor != NULL ? advanceCursor : g_advanceCursor;
     cursor->resetCursor = resetCursor != NULL ? resetCursor : kssc_resetCursor;
+    //调用游标的重置函数以初始化状态。这一步完成后，cursor 将处于有效状态，准备进行堆栈遍历。
     cursor->resetCursor(cursor);
 }

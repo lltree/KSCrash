@@ -61,7 +61,7 @@ typedef struct KSStackCursor {
     } stackEntry;
     struct {
         /** Current depth as we walk the stack (1-based). */
-        int currentDepth;
+        int currentDepth;//用户计算已经回溯多少栈帧了
 
         /** If true, cursor has given up walking the stack. */
         bool hasGivenUp;

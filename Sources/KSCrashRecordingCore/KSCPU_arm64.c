@@ -57,10 +57,22 @@ uintptr_t kscpu_linkRegister(const KSMachineContext *const context) { return con
 
 void kscpu_getState(KSMachineContext *context)
 {
+    // 获取当前线程的标识（thread_t），它用于在系统中查找和操作当前线程
     thread_t thread = context->thisThread;
+
+    // 获取机器上下文（machineContext）的指针，它包含当前线程的寄存器状态
     STRUCT_MCONTEXT_L *const machineContext = &context->machineContext;
 
+    //__ss 栈状态
+    // 填充当前线程的常规状态（ARM_THREAD_STATE64），
+    // 这个状态结构包含了诸如程序计数器、栈指针、通用寄存器等信息。
+    // 将这些信息存储在 machineContext->__ss 位置。
     kscpu_i_fillState(thread, (thread_state_t)&machineContext->__ss, ARM_THREAD_STATE64, ARM_THREAD_STATE64_COUNT);
+
+    //__es 额外数据段
+    // 填充当前线程的异常状态（ARM_EXCEPTION_STATE64），
+    // 该状态结构通常包括异常类型、异常的返回地址等。
+    // 将这些信息存储在 machineContext->__es 位置。
     kscpu_i_fillState(thread, (thread_state_t)&machineContext->__es, ARM_EXCEPTION_STATE64,
                       ARM_EXCEPTION_STATE64_COUNT);
 }

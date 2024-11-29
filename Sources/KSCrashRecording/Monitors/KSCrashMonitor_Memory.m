@@ -534,6 +534,7 @@ static void ksmemory_write_possible_oom(void)
 
 void ksmemory_initialize(const char *dataPath)
 {
+    //内存保存的数据
     g_hasPostEnable = 0;
     g_dataURL = [NSURL fileURLWithPath:@(dataPath)];
     g_memoryURL = [g_dataURL URLByAppendingPathComponent:@"memory.bin"];

@@ -44,40 +44,62 @@ extern const uint8_t KSCrash_Memory_CurrentVersion;
 extern const uint8_t KSCrash_Memory_NonFatalReportLevelNone;
 
 /**
- App Memory
+ * 结构体 `KSCrash_Memory` 描述了应用程序在运行期间的内存使用状态。
  */
 typedef struct KSCrash_Memory {
-    /** magic header */
+    /**
+     * 魔数标记，用于验证结构体的合法性。
+     */
     int32_t magic;
 
-    /** current version of the struct */
+    /**
+     * 结构体的当前版本，用于兼容性检查。
+     */
     int8_t version;
 
-    /** timestamp in microseconds */
+    /**
+     * 时间戳，单位为微秒，记录采集内存数据的时间点。
+     */
     int64_t timestamp;
 
-    /** amount of app memory used */
+    /**
+     * 应用程序已使用的内存量，单位为字节。
+     */
     uint64_t footprint;
 
-    /** amount of app memory remaining */
+    /**
+     * 应用程序剩余可用的内存量，单位为字节。
+     */
     uint64_t remaining;
 
-    /** high water mark for footprint (footprint +  remaining)*/
+    /**
+     * 内存占用的峰值（high water mark），等于 `footprint + remaining`。
+     */
     uint64_t limit;
 
-    /** memory pressure  `KSCrashAppMemoryPressure` */
+    /**
+     * 当前的内存压力，使用枚举 `KSCrashAppMemoryPressure` 表示。
+     */
     uint8_t pressure;
 
-    /** memory level  `KSCrashAppMemoryLevel` (KSCrashAppMemory.level) */
+    /**
+     * 当前的内存级别，使用枚举 `KSCrashAppMemoryLevel` 表示。
+     * （如：正常、警告、紧急等级别）
+     */
     uint8_t level;
 
-    /** transition state of the app */
+    /**
+     * 应用程序的状态转换，记录了内存相关的状态变化信息。
+     */
     KSCrashAppTransitionState state;
 
-    /** The process for this data had a fatal exception/event of some type */
+    /**
+     * 如果为 `true`，表示该进程发生了某种致命异常或事件。
+     */
     bool fatal;
 
 } KSCrash_Memory;
+
 
 /** Access the Monitor API.
  */

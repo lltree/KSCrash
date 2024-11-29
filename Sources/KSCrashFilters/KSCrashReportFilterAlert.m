@@ -160,6 +160,7 @@
     dispatch_async(dispatch_get_main_queue(), ^{
         KSLOG_TRACE(@"Launching new alert view process");
         __block KSCrashAlertViewProcess *process = [[KSCrashAlertViewProcess alloc] init];
+        //弹框问询
         [process startWithTitle:self.title
                         message:self.message
                       yesAnswer:self.yesAnswer

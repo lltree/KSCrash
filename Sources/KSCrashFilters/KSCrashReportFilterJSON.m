@@ -66,6 +66,7 @@
             kscrash_callCompletion(onCompletion, filteredReports, error);
             return;
         } else {
+            //把报告转成JSON
             [filteredReports addObject:[KSCrashReportData reportWithValue:jsonData]];
         }
     }

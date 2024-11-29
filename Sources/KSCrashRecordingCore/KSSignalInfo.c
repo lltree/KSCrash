@@ -96,9 +96,19 @@ static const int g_fatalSignalsCount = sizeof(g_fatalSignalData) / sizeof(*g_fat
 
 // Note: Dereferencing a NULL pointer causes SIGILL, ILL_ILLOPC on i386
 //       but causes SIGTRAP, 0 on arm.
+// 定义一个静态常量数组，列出需要监控的致命信号
 static const int g_fatalSignals[] = {
-    SIGABRT, SIGBUS, SIGFPE, SIGILL, SIGPIPE, SIGSEGV, SIGSYS, SIGTRAP, SIGTERM,
+    SIGABRT, // 程序调用 abort() 函数触发，表示发生不可恢复的错误
+    SIGBUS,  // 总线错误，通常由于内存访问对齐问题导致
+    SIGFPE,  // 浮点运算错误，例如除以零或运算溢出
+    SIGILL,  // 非法指令错误，可能由于执行未定义或不支持的 CPU 指令导致
+    SIGPIPE, // 向已关闭的管道或套接字写入数据时触发
+    SIGSEGV, // 段错误，通常由于访问非法内存地址引发
+    SIGSYS,  // 非法或未授权的系统调用
+    SIGTRAP, // 调试陷阱信号，通常由调试器或程序触发
+    SIGTERM, // 终止信号，表示请求程序优雅地退出
 };
+
 
 const char *kssignal_signalName(const int sigNum)
 {

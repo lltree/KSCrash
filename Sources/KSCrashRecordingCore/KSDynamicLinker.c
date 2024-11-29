@@ -199,6 +199,14 @@ const uint8_t *ksdl_imageUUID(const char *const imageName, bool exactMatch)
 
 bool ksdl_dladdr(const uintptr_t address, Dl_info *const info)
 {
+    /*
+     Dl_info 结构体包含如下字段：
+
+     dli_fname：包含包含符号的库文件的路径。
+     dli_fbase：该库文件的加载基地址。
+     dli_sname：符号名称。
+     dli_saddr：符号的地址。
+     */
     info->dli_fname = NULL;
     info->dli_fbase = NULL;
     info->dli_sname = NULL;

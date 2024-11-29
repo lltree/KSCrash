@@ -154,6 +154,7 @@ static bool installSignalHandler(void)
     const int *fatalSignals = kssignal_fatalSignals();
     int fatalSignalsCount = kssignal_numFatalSignals();
 
+    //保存以前的
     if (g_previousSignalHandlers == NULL) {
         KSLOG_DEBUG("Allocating memory to store previous signal handlers.");
         g_previousSignalHandlers = malloc(sizeof(*g_previousSignalHandlers) * (unsigned)fatalSignalsCount);
@@ -230,9 +231,10 @@ static void setEnabled(bool isEnabled)
 }
 
 static bool isEnabled(void) { return g_isEnabled; }
-
-static void addContextualInfoToEvent(struct KSCrash_MonitorContext *eventContext)
-{
+/*
+ 为 KSCrash_MonitorContext 的事件上下文结构添加上下文信息，主要是检查 monitorId 是否匹配，并在不匹配的情况下设置默认的信号编号。
+ */
+static void addContextualInfoToEvent(struct KSCrash_MonitorContext *eventContext) {
     const char *machName = kscm_getMonitorId(kscm_machexception_getAPI());
 
     if (!(strcmp(eventContext->monitorId, monitorId()) == 0 ||
@@ -250,14 +252,15 @@ void kscm_signal_sigterm_setMonitoringEnabled(bool enabled)
 #endif
 }
 
-KSCrashMonitorAPI *kscm_signal_getAPI(void)
-{
+KSCrashMonitorAPI * kscm_signal_getAPI(void) {
 #if KSCRASH_HAS_SIGNAL
-    static KSCrashMonitorAPI api = { .monitorId = monitorId,
-                                     .monitorFlags = monitorFlags,
-                                     .setEnabled = setEnabled,
-                                     .isEnabled = isEnabled,
-                                     .addContextualInfoToEvent = addContextualInfoToEvent };
+    static KSCrashMonitorAPI api = {
+        .monitorId                = monitorId,
+        .monitorFlags             = monitorFlags,
+        .setEnabled               = setEnabled,
+        .isEnabled                = isEnabled,
+        .addContextualInfoToEvent = addContextualInfoToEvent
+    };
     return &api;
 #else
     return NULL;

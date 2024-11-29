@@ -778,7 +778,7 @@ static void writeAddressReferencedByString(const KSCrashReportWriter *const writ
     writeMemoryContents(writer, key, (uintptr_t)address, &limit);
 }
 
-#pragma mark Backtrace
+#pragma mark Backtrace 线程回溯
 
 /** Write a backtrace to the report.
  *
@@ -794,9 +794,11 @@ static void writeBacktrace(const KSCrashReportWriter *const writer, const char *
     {
         writer->beginArray(writer, KSCrashField_Contents);
         {
+            //写的时候才使用advanceCursor
             while (stackCursor->advanceCursor(stackCursor)) {
                 writer->beginObject(writer, NULL);
                 {
+                    //写的时候调用kssymbolicator_symbolicate 来设置
                     if (stackCursor->symbolicate(stackCursor)) {
                         if (stackCursor->stackEntry.imageName != NULL) {
                             writer->addStringElement(writer, KSCrashField_ObjectName,
@@ -1054,12 +1056,14 @@ static void writeThread(const KSCrashReportWriter *const writer, const char *con
     writer->beginObject(writer, key);
     {
         if (hasBacktrace) {
+            //这里边回溯堆栈
             writeBacktrace(writer, KSCrashField_Backtrace, &stackCursor);
         }
         if (ksmc_canHaveCPUState(machineContext)) {
             writeRegisters(writer, KSCrashField_Registers, machineContext);
         }
         writer->addIntegerElement(writer, KSCrashField_Index, threadIndex);
+        //从缓存中拿名字
         const char *name = ksccd_getThreadName(thread);
         if (name != NULL) {
             writer->addStringElement(writer, KSCrashField_Name, name);
@@ -1079,7 +1083,7 @@ static void writeThread(const KSCrashReportWriter *const writer, const char *con
     }
     writer->endContainer(writer);
 }
-
+#pragma mark - 写报告的时候存储所有线程堆栈
 /** Write information about all threads to the report.
  *
  * @param writer The writer.
@@ -1535,7 +1539,7 @@ static void writeSystemInfo(const KSCrashReportWriter *const writer, const char 
         writer->addStringElement(writer, KSCrashField_DeviceAppHash, monitorContext->System.deviceAppHash);
         writer->addStringElement(writer, KSCrashField_BuildType, monitorContext->System.buildType);
         writer->addIntegerElement(writer, KSCrashField_Storage, (int64_t)monitorContext->System.storageSize);
-
+        //写内存信息
         writeMemoryInfo(writer, KSCrashField_Memory, monitorContext);
         writeAppStats(writer, KSCrashField_AppStats, monitorContext);
         writeAppMemoryInfo(writer, KSCrashField_AppMemory, monitorContext);
@@ -1554,7 +1558,7 @@ static void writeDebugInfo(const KSCrashReportWriter *const writer, const char *
     }
     writer->endContainer(writer);
 }
-
+#pragma mark - 写整个日志
 void kscrashreport_writeStandardReport(const KSCrash_MonitorContext *const monitorContext, const char *const path)
 {
     KSLOG_INFO("Writing crash report to %s", path);
@@ -1577,10 +1581,12 @@ void kscrashreport_writeStandardReport(const KSCrash_MonitorContext *const monit
 
     writer->beginObject(writer, KSCrashField_Report);
     {
+        //process
         writeReportInfo(writer, KSCrashField_Report, KSCrashReportType_Standard, monitorContext->eventID,
                         monitorContext->System.processName);
         ksfu_flushBufferedWriter(&bufferedWriter);
 
+        //binary_images
         if (!monitorContext->omitBinaryImages) {
             writeBinaryImages(writer, KSCrashField_BinaryImages);
             ksfu_flushBufferedWriter(&bufferedWriter);
@@ -1589,9 +1595,12 @@ void kscrashreport_writeStandardReport(const KSCrash_MonitorContext *const monit
         writeProcessState(writer, KSCrashField_ProcessState, monitorContext);
         ksfu_flushBufferedWriter(&bufferedWriter);
 
+        //system
         writeSystemInfo(writer, KSCrashField_System, monitorContext);
         ksfu_flushBufferedWriter(&bufferedWriter);
 
+        //crash
+        //遍历所有线程，并回溯堆栈
         writer->beginObject(writer, KSCrashField_Crash);
         {
             writeError(writer, KSCrashField_Error, monitorContext);
@@ -1601,6 +1610,7 @@ void kscrashreport_writeStandardReport(const KSCrash_MonitorContext *const monit
         }
         writer->endContainer(writer);
 
+        //user
         if (g_userInfoJSON != NULL) {
             addJSONElement(writer, KSCrashField_User, g_userInfoJSON, false);
             ksfu_flushBufferedWriter(&bufferedWriter);
@@ -1614,6 +1624,7 @@ void kscrashreport_writeStandardReport(const KSCrash_MonitorContext *const monit
         writer->endContainer(writer);
         ksfu_flushBufferedWriter(&bufferedWriter);
 
+        //debug
         writeDebugInfo(writer, KSCrashField_Debug, monitorContext);
     }
     writer->endContainer(writer);

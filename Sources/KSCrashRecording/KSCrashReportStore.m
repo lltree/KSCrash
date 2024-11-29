@@ -76,12 +76,13 @@
 }
 
 - (NSInteger)reportCount
-{
+{   
     return kscrs_getReportCount(&_cConfig);
 }
 
 - (void)sendAllReportsWithCompletion:(KSCrashReportFilterCompletion)onCompletion
 {
+    //获取所有日志
     NSArray *reports = [self allReports];
 
     KSLOG_INFO(@"Sending %d crash reports", [reports count]);
